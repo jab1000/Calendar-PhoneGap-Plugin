@@ -20,10 +20,18 @@
   EKEventStore* eventStoreCandidate = [[EKEventStore alloc] init];
   if([eventStoreCandidate respondsToSelector:@selector(requestAccessToEntityType:completion:)]) {
     dispatch_semaphore_t sema = dispatch_semaphore_create(0);
-    [eventStoreCandidate requestAccessToEntityType:EKEntityTypeEvent completion:^(BOOL granted, NSError *error) {
-      accessGranted = granted;
-      dispatch_semaphore_signal(sema);
-    }];
+      if (@available(iOS 17.0, *)) {
+          [eventStoreCandidate requestWriteOnlyAccessToEventsWithCompletion:^(BOOL granted, NSError *error) {
+              accessGranted = granted;
+              dispatch_semaphore_signal(sema);
+          }];
+      } else {
+          [eventStoreCandidate requestAccessToEntityType:EKEntityTypeEvent completion:^(BOOL granted, NSError *error) {
+            accessGranted = granted;
+            dispatch_semaphore_signal(sema);
+          }];
+      }
+   
     dispatch_semaphore_wait(sema, DISPATCH_TIME_FOREVER);
   } else { // we're on iOS 5 or older
     accessGranted = YES;
